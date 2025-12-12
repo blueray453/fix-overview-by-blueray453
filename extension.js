@@ -14,11 +14,6 @@ let _originalShowOverlay = null;
 let _originalHideOverlay = null;
 
 export default class NotificationThemeExtension extends Extension {
-  constructor(metadata) {
-    super(metadata);
-    this._themeSignalId = null;
-  }
-
   enable() {
     setLogFn((msg, error = false) => {
       let level;
