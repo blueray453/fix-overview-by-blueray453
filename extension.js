@@ -6,6 +6,8 @@ import * as WindowPreview from 'resource:///org/gnome/shell/ui/windowPreview.js'
 import * as WorkspacesView from 'resource:///org/gnome/shell/ui/workspacesView.js';
 import { setLogging, setLogFn, journal } from './utils.js';
 
+const thumbnailsBox = Main.overview._overview._controls._thumbnailsBox;
+
 let _originalUpdateWorkspacesState = null;
 let _originalInit = null;
 let _originalShowOverlay = null;
@@ -44,6 +46,18 @@ export default class NotificationThemeExtension extends Extension {
 
     // journalctl -f -o cat SYSLOG_IDENTIFIER=fix-overview-by-blueray453
     journal(`Enabled`);
+
+    this._oldUpdateShouldShow = thumbnailsBox._updateShouldShow;
+    thumbnailsBox._updateShouldShow = () => {
+      const shouldShow = false;
+
+      if (thumbnailsBox._shouldShow === shouldShow)
+        return;
+
+      thumbnailsBox._shouldShow = shouldShow;
+      thumbnailsBox.notify('should-show');
+    }
+    thumbnailsBox._updateShouldShow();
 
     // No overview at start-up
     this._overviewHideSignalId = Main.layoutManager.connectObject('startup-complete', () => Main.overview.hide(), this);
@@ -141,6 +155,10 @@ export default class NotificationThemeExtension extends Extension {
   }
 
   disable() {
+    if (this._oldUpdateShouldShow) {
+      thumbnailsBox._updateShouldShow = this._oldUpdateShouldShow;
+    }
+    thumbnailsBox._updateShouldShow();
 
     if (this._overviewHideSignalId) {
       Main.layoutManager.disconnectObject(this._overviewHideSignalId);
