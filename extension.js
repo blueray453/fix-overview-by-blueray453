@@ -47,20 +47,9 @@ export default class NotificationThemeExtension extends Extension {
     // journalctl -f -o cat SYSLOG_IDENTIFIER=fix-overview-by-blueray453
     journal(`Enabled`);
 
-    this._oldUpdateShouldShow = thumbnailsBox._updateShouldShow;
-    thumbnailsBox._updateShouldShow = () => {
-      const shouldShow = false;
+    this.NoOverviewAtStartUp();
 
-      if (thumbnailsBox._shouldShow === shouldShow)
-        return;
-
-      thumbnailsBox._shouldShow = shouldShow;
-      thumbnailsBox.notify('should-show');
-    }
-    thumbnailsBox._updateShouldShow();
-
-    // No overview at start-up
-    this._overviewHideSignalId = Main.layoutManager.connectObject('startup-complete', () => Main.overview.hide(), this);
+    this.hideThumbnailsBox();
 
     // const workspacesDisplay = Main.overview._overview.controls._workspacesDisplay;
     // let _overviewShowingId = Main.overview.connect('showing', () => {
@@ -104,10 +93,15 @@ export default class NotificationThemeExtension extends Extension {
       _originalInit = WindowPreview.WindowPreview.prototype._init;
     }
 
-    // Override the _init method
-    WindowPreview.WindowPreview.prototype._init = function (...args) {
+    // _init() in GNOME often changes argument count and meaning
+    // this is why extra measures are taken
+    WindowPreview.WindowPreview.prototype._init = function () {
       // Call the original _init
-      _originalInit.call(this, ...args);
+      _originalInit.apply(this, arguments);
+      // _originalInit.call(this, ...arguments);
+
+      if (!this._title)
+        return;
 
       this._title.show();
 
@@ -154,7 +148,28 @@ export default class NotificationThemeExtension extends Extension {
 
   }
 
+  NoOverviewAtStartUp(){
+    // No overview at start-up
+    Main.layoutManager.connectObject('startup-complete', () => Main.overview.hide(), this);
+  }
+
+  hideThumbnailsBox(){
+    this._oldUpdateShouldShow = thumbnailsBox._updateShouldShow;
+    thumbnailsBox._updateShouldShow = () => {
+      const shouldShow = false;
+
+      if (thumbnailsBox._shouldShow === shouldShow)
+        return;
+
+      thumbnailsBox._shouldShow = shouldShow;
+      thumbnailsBox.notify('should-show');
+    }
+    thumbnailsBox._updateShouldShow();
+  }
+
   disable() {
+    Main.layoutManager.disconnectObject(this);
+
     if (this._oldUpdateShouldShow) {
       thumbnailsBox._updateShouldShow = this._oldUpdateShouldShow;
     }
