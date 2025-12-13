@@ -8,10 +8,10 @@ import { setLogging, setLogFn, journal } from './utils.js';
 
 const thumbnailsBox = Main.overview._overview._controls._thumbnailsBox;
 
-let _originalUpdateWorkspacesState = null;
-let _originalInit = null;
-let _originalShowOverlay = null;
-let _originalHideOverlay = null;
+let _originalUpdateWorkspacesState = WorkspacesView.WorkspacesView.prototype._updateWorkspacesState;
+let _originalInit = WindowPreview.WindowPreview.prototype._init;
+let _originalShowOverlay = WindowPreview.WindowPreview.prototype.showOverlay;
+let _originalHideOverlay = WindowPreview.WindowPreview.prototype.hideOverlay;
 
 export default class NotificationThemeExtension extends Extension {
   enable() {
@@ -70,10 +70,6 @@ export default class NotificationThemeExtension extends Extension {
     //   });
     // });
 
-    if (!_originalUpdateWorkspacesState) {
-      _originalUpdateWorkspacesState = WorkspacesView.WorkspacesView.prototype._updateWorkspacesState;
-    }
-
     WorkspacesView.WorkspacesView.prototype._updateWorkspacesState = function (...args) {
       // Call the original function first
       _originalUpdateWorkspacesState.call(this, ...args);
@@ -83,10 +79,6 @@ export default class NotificationThemeExtension extends Extension {
         w.set_scale(0.96, 0.96);
       });
     };
-
-    if (!_originalInit) {
-      _originalInit = WindowPreview.WindowPreview.prototype._init;
-    }
 
     // _init() in GNOME often changes argument count and meaning
     // this is why extra measures are taken
@@ -110,10 +102,6 @@ export default class NotificationThemeExtension extends Extension {
       }
     };
 
-    if (!_originalShowOverlay) {
-      _originalShowOverlay = WindowPreview.WindowPreview.prototype.showOverlay;
-    }
-
     WindowPreview.WindowPreview.prototype.showOverlay = function (...args) {
       _originalShowOverlay.call(this, ...args);
 
@@ -129,10 +117,6 @@ export default class NotificationThemeExtension extends Extension {
       // Remove the title from Shell's animation handling
       this._title.set_opacity(255);
     };
-
-    if (!_originalHideOverlay) {
-      _originalHideOverlay = WindowPreview.WindowPreview.prototype.hideOverlay;
-    }
 
     WindowPreview.WindowPreview.prototype.hideOverlay = function (...args) {
       _originalHideOverlay.call(this, ...args);
@@ -184,24 +168,12 @@ export default class NotificationThemeExtension extends Extension {
       this._overviewHideSignalId = null;
     }
 
-    if (_originalUpdateWorkspacesState) {
-      WorkspacesView.WorkspacesView.prototype._updateWorkspacesState = _originalUpdateWorkspacesState;
-      _originalUpdateWorkspacesState = null;
-    }
+    WorkspacesView.WorkspacesView.prototype._updateWorkspacesState = _originalUpdateWorkspacesState;
 
-    if (_originalInit) {
-      WindowPreview.WindowPreview.prototype._init = _originalInit;
-      _originalInit = null;
-    }
+    WindowPreview.WindowPreview.prototype._init = _originalInit;
 
-    if (_originalShowOverlay) {
-      WindowPreview.WindowPreview.prototype.showOverlay = _originalShowOverlay;
-      _originalShowOverlay = null;
-    }
+    WindowPreview.WindowPreview.prototype.showOverlay = _originalShowOverlay;
 
-    if (_originalHideOverlay) {
-      WindowPreview.WindowPreview.prototype.hideOverlay = _originalHideOverlay;
-      _originalHideOverlay = null;
-    }
+    WindowPreview.WindowPreview.prototype.hideOverlay = _originalHideOverlay;
   }
 }
