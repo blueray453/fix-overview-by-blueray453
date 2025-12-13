@@ -145,7 +145,12 @@ export default class NotificationThemeExtension extends Extension {
 
   NoOverviewAtStartUp(){
     // No overview at start-up
-    Main.layoutManager.connectObject('startup-complete', () => Main.overview.hide(), this);
+    // Main.layoutManager.connectObject('startup-complete', () => Main.overview.hide(), this);
+    this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+      Main.overview.hide();
+      this._idleId = null;
+      return GLib.SOURCE_REMOVE;
+    });
   }
 
   hideThumbnailsBox(){
@@ -163,7 +168,11 @@ export default class NotificationThemeExtension extends Extension {
   }
 
   disable() {
-    Main.layoutManager.disconnectObject(this);
+    // Main.layoutManager.disconnectObject(this);
+    if (this._idleId) {
+      GLib.source_remove(this._idleId);
+      this._idleId = null;
+    }
 
     if (this._oldUpdateShouldShow) {
       thumbnailsBox._updateShouldShow = this._oldUpdateShouldShow;
