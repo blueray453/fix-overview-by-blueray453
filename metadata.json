@@ -1,7 +1,7 @@
 {
   "uuid": "fix-overview-by-blueray453",
   "name": "Fix Overview by blueray453",
-  "description": "GNOME Shell extension that fixes my CSS.",
+  "description": "GNOME Shell extension that fixes Overview.",
   "version": 1,
   "shell-version": [
     "48",
