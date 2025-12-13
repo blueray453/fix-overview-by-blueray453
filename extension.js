@@ -7,11 +7,10 @@ import * as WorkspacesView from 'resource:///org/gnome/shell/ui/workspacesView.j
 import { setLogging, setLogFn, journal } from './utils.js';
 
 const thumbnailsBox = Main.overview._overview._controls._thumbnailsBox;
-
-let _originalUpdateWorkspacesState = WorkspacesView.WorkspacesView.prototype._updateWorkspacesState;
-let _originalInit = WindowPreview.WindowPreview.prototype._init;
-let _originalShowOverlay = WindowPreview.WindowPreview.prototype.showOverlay;
-let _originalHideOverlay = WindowPreview.WindowPreview.prototype.hideOverlay;
+const _originalUpdateWorkspacesState = WorkspacesView.WorkspacesView.prototype._updateWorkspacesState;
+const _originalWindowPreviewInit = WindowPreview.WindowPreview.prototype._init;
+const _originalShowOverlay = WindowPreview.WindowPreview.prototype.showOverlay;
+const _originalHideOverlay = WindowPreview.WindowPreview.prototype.hideOverlay;
 
 export default class NotificationThemeExtension extends Extension {
   enable() {
@@ -42,9 +41,9 @@ export default class NotificationThemeExtension extends Extension {
     // journalctl -f -o cat SYSLOG_IDENTIFIER=fix-overview-by-blueray453
     journal(`Enabled`);
 
-    this.NoOverviewAtStartUp();
+    this._NoOverviewAtStartUp();
 
-    this.hideThumbnailsBox();
+    this._hideThumbnailsBox();
 
     // const workspacesDisplay = Main.overview._overview.controls._workspacesDisplay;
     // let _overviewShowingId = Main.overview.connect('showing', () => {
@@ -70,6 +69,35 @@ export default class NotificationThemeExtension extends Extension {
     //   });
     // });
 
+    this._scaleWorkspacesView();
+    this._WindowPreviewTitle();
+  }
+
+  _NoOverviewAtStartUp(){
+    // No overview at start-up
+    // Main.layoutManager.connectObject('startup-complete', () => Main.overview.hide(), this);
+    this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+      Main.overview.hide();
+      this._idleId = null;
+      return GLib.SOURCE_REMOVE;
+    });
+  }
+
+  _hideThumbnailsBox() {
+    this._originalUpdateShouldShow = thumbnailsBox._updateShouldShow;
+    thumbnailsBox._updateShouldShow = () => {
+      const shouldShow = false;
+
+      if (thumbnailsBox._shouldShow === shouldShow)
+        return;
+
+      thumbnailsBox._shouldShow = shouldShow;
+      thumbnailsBox.notify('should-show');
+    }
+    thumbnailsBox._updateShouldShow();
+  }
+
+  _scaleWorkspacesView() {
     WorkspacesView.WorkspacesView.prototype._updateWorkspacesState = function (...args) {
       // Call the original function first
       _originalUpdateWorkspacesState.call(this, ...args);
@@ -79,13 +107,12 @@ export default class NotificationThemeExtension extends Extension {
         w.set_scale(0.96, 0.96);
       });
     };
+  }
 
-    // _init() in GNOME often changes argument count and meaning
-    // this is why extra measures are taken
+  _WindowPreviewTitle() {
     WindowPreview.WindowPreview.prototype._init = function () {
       // Call the original _init
-      _originalInit.apply(this, arguments);
-      // _originalInit.call(this, ...arguments);
+      _originalWindowPreviewInit.apply(this, arguments);
 
       if (!this._title)
         return;
@@ -105,15 +132,6 @@ export default class NotificationThemeExtension extends Extension {
     WindowPreview.WindowPreview.prototype.showOverlay = function (...args) {
       _originalShowOverlay.call(this, ...args);
 
-      // // Move the title to bottom once, but don't force show()
-      // const titleConstraints = this._title.get_constraints();
-      // for (const constraint of titleConstraints) {
-      //   if (constraint instanceof Clutter.AlignConstraint &&
-      //     constraint.align_axis === Clutter.AlignAxis.Y_AXIS) {
-      //     constraint.set_factor(0.5); // 0=top, 0.5=center, 1=bottom
-      //   }
-      // }
-
       // Remove the title from Shell's animation handling
       this._title.set_opacity(255);
     };
@@ -124,31 +142,6 @@ export default class NotificationThemeExtension extends Extension {
       // Keep the title visible, don't animate it
       this._title.set_opacity(255);
     };
-
-  }
-
-  NoOverviewAtStartUp(){
-    // No overview at start-up
-    // Main.layoutManager.connectObject('startup-complete', () => Main.overview.hide(), this);
-    this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-      Main.overview.hide();
-      this._idleId = null;
-      return GLib.SOURCE_REMOVE;
-    });
-  }
-
-  hideThumbnailsBox(){
-    this._oldUpdateShouldShow = thumbnailsBox._updateShouldShow;
-    thumbnailsBox._updateShouldShow = () => {
-      const shouldShow = false;
-
-      if (thumbnailsBox._shouldShow === shouldShow)
-        return;
-
-      thumbnailsBox._shouldShow = shouldShow;
-      thumbnailsBox.notify('should-show');
-    }
-    thumbnailsBox._updateShouldShow();
   }
 
   disable() {
@@ -158,8 +151,8 @@ export default class NotificationThemeExtension extends Extension {
       this._idleId = null;
     }
 
-    if (this._oldUpdateShouldShow) {
-      thumbnailsBox._updateShouldShow = this._oldUpdateShouldShow;
+    if (this._originalUpdateShouldShow) {
+      thumbnailsBox._updateShouldShow = this._originalUpdateShouldShow;
     }
     thumbnailsBox._updateShouldShow();
 
@@ -170,7 +163,7 @@ export default class NotificationThemeExtension extends Extension {
 
     WorkspacesView.WorkspacesView.prototype._updateWorkspacesState = _originalUpdateWorkspacesState;
 
-    WindowPreview.WindowPreview.prototype._init = _originalInit;
+    WindowPreview.WindowPreview.prototype._init = _originalWindowPreviewInit;
 
     WindowPreview.WindowPreview.prototype.showOverlay = _originalShowOverlay;
 
