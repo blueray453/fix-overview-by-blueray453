@@ -82,9 +82,8 @@ export default class NotificationThemeExtension extends Extension {
     // PRIORITY_HIGH_IDLE = 100
     // PRIORITY_DEFAULT_IDLE = 200
     // PRIORITY_LOW = 300
-    this._idleId = GLib.idle_add(GLib.PRIORITY_HIGH, () => {
+    GLib.idle_add(GLib.PRIORITY_HIGH, () => {
       Main.overview.hide();
-      this._idleId = null;
       return GLib.SOURCE_REMOVE;
     });
   }
@@ -187,11 +186,6 @@ export default class NotificationThemeExtension extends Extension {
   }
 
   disable() {
-    if (this._idleId) {
-      GLib.source_remove(this._idleId);
-      this._idleId = null;
-    }
-
     this.injector.removeAllInjections();
 
     // WindowPreview.WindowPreview.prototype.hideOverlay = _originalHideOverlay;
