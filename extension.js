@@ -86,6 +86,12 @@ export default class NotificationThemeExtension extends Extension {
       Main.overview.hide();
       return GLib.SOURCE_REMOVE;
     });
+
+    // Main.layoutManager.connectObject(
+    //   'startup-complete',
+    //   () => Main.overview.hide(),
+    //   this
+    // );
   }
 
   _WindowPreviewTitle() {
@@ -187,7 +193,7 @@ export default class NotificationThemeExtension extends Extension {
 
   disable() {
     this.injector.removeAllInjections();
-
+    // Main.layoutManager.disconnectObject(this);
     // WindowPreview.WindowPreview.prototype.hideOverlay = _originalHideOverlay;
     // WindowPreview.WindowPreview.prototype.showOverlay = _originalShowOverlay;
     // WindowPreview.WindowPreview.prototype._init = _originalWindowPreviewInit;
